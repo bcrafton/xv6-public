@@ -1,4 +1,4 @@
-#include "types.h"
+ #include "types.h"
 #include "x86.h"
 #include "defs.h"
 #include "date.h"
@@ -88,4 +88,18 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+int
+sys_date(void)
+{
+	int n;
+	struct rtcdate *d;
+	if(argint(0, &n) < 0)
+		return -1;
+	argptr(&d, sizeof(struct rtcdate *));
+	acquire(&tickslock);
+	cpy();
+	release(&tickslock);
+	return 0;
 }
