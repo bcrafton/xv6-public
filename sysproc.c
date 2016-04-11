@@ -99,7 +99,7 @@ sys_date(void)
 		return -1;
 	argptr(&d, sizeof(struct rtcdate *));
 	acquire(&tickslock);
-	
+	cmostime(d);
 	release(&tickslock);
 	return 0;
 }
