@@ -96,8 +96,10 @@ sys_date(void)
 	int n;
 	struct rtcdate *d;
 	if(argint(0, &n) < 0)
+	{
 		return -1;
-	argptr(&d, sizeof(struct rtcdate *));
+	}
+	d = (struct rtcdate *)n;
 	acquire(&tickslock);
 	cmostime(d);
 	release(&tickslock);
