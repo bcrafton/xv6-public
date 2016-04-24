@@ -1,4 +1,4 @@
-#include "types.h"
+ #include "types.h"
 #include "x86.h"
 #include "defs.h"
 #include "date.h"
@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_clone(void) {
+  void *stack;
+  int size;
+
+  if (argint(1,&size) < 0 || argptr(0,(char **) &stack,size) < 0) 
+    return -1;
+
+  return clone(stack,size);
+}
+

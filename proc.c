@@ -166,6 +166,48 @@ fork(void)
   return pid;
 }
 
+// Creates a clone of the parent process by taking in a newly allocated stack
+// and copies the contents of the parents stack to the clone's new stack. The
+// new clone also uses the same pgdir as the parent. 
+int
+clone(void *stack, int size)
+{
+  int i, pid;
+  struct proc *np;
+  // Allocate process.
+  if((np = allocproc()) == 0)
+     return -1;
+  
+  np->pgdir = proc->pgdir;
+  np->sz = proc->sz;
+  np->parent = proc;
+  *np->tf = *proc->tf;
+
+  // Clear %eax so that fork returns 0 in the child.
+  np->tf->eax = 0;
+  
+  //calculate stack size(from function arg #n to esp)
+  uint stackSize = *(uint *)proc->tf->ebp - proc->tf->esp;
+  //move stack pointer to bottom of trapframe
+  np->tf->esp = (uint)stack+size - stackSize;
+  //calculate size needed above ebp
+  uint topSize = *(uint *)proc->tf->ebp - proc->tf->ebp;
+  //move base pointer below topsize
+  np->tf->ebp = (uint)stack+size - topSize;
+  //copy parent processee's stack to child
+  memmove((void *)(np->tf->esp),(const void *)(proc->tf->esp), stackSize);
+
+  for(i = 0; i < NOFILE; i++)
+    if(proc->ofile[i])
+      np->ofile[i] = filedup(proc->ofile[i]);
+  np->cwd = idup(proc->cwd);
+
+  pid = np->pid;
+  np->state = RUNNABLE;
+  safestrcpy(np->name, proc->name, sizeof(proc->name));
+  return pid;
+}
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
