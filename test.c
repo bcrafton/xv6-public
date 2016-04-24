@@ -31,7 +31,7 @@ main(int argc, char *argv[])
   int pid;
   for(i=0; i<NUM_THREADS; i++)
   {
-    pid = fork();//thread_create(function, (void *)&x);
+    pid = thread_create(function, (void *)&x);
     if(pid == -1)
     {
       printf(2, "Error: thread_create failure");

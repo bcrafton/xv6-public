@@ -101,3 +101,8 @@ sys_clone(void) {
   return clone(stack,size);
 }
 
+int
+sys_join(void)
+{
+  return join();
+}

@@ -12,7 +12,7 @@
 int
 thread_join(void)
 {
-  return wait();
+  return join();
 }
 
 
