@@ -6,26 +6,28 @@
 
 #define NUM_THREADS 5
 
-lock_t *lock;
-int counter;
+struct threadlock lock;
 
 // Increments a counter by one in a for-loop argument a number of times
 void *
 function(void* arg)
 {
+  threadlock_acquire((struct threadlock *)&lock);
   int i;
   int* x = (int*)arg;
-  for(i=0; i<100; i++)
+  for(i=0; i<100000000; i++)
   {
     (*x)++;
   }
   printf(1, "%d\n", *x);
+  threadlock_release((struct threadlock *)&lock);
   return 0;
 }
 
 int
 main(int argc, char *argv[])
 {
+  threadlock_init((struct threadlock *)&lock);
   int x = 0;
   int i;
   int pid;

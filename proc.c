@@ -178,7 +178,9 @@ clone(void *stack, int size)
   if((np = allocproc()) == 0)
      return -1;
   
+  // new process points to old processes page directory
   np->pgdir = proc->pgdir;
+
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
@@ -186,25 +188,45 @@ clone(void *stack, int size)
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
   
-  //calculate stack size(from function arg #n to esp)
-  uint stackSize = *(uint *)proc->tf->ebp - proc->tf->esp;
-  //move stack pointer to bottom of trapframe
-  np->tf->esp = (uint)stack+size - stackSize;
-  //calculate size needed above ebp
-  uint topSize = *(uint *)proc->tf->ebp - proc->tf->ebp;
-  //move base pointer below topsize
-  np->tf->ebp = (uint)stack+size - topSize;
-  //copy parent processee's stack to child
-  memmove((void *)(np->tf->esp),(const void *)(proc->tf->esp), stackSize);
+  // new process/thread needs to have the same stack
+  // this is because it will continue execution the
+  // same way a fork would.
+
+  // note:
+  // ebp contains the location of the base pointer in the user stack
+  // dereferencing it gives where the actual base pointer 
+  // is pointing too.
+
+  uint current_stack_size = (*(uint *)proc->tf->ebp) - proc->tf->esp;
+  np->tf->esp = (uint)stack+size - current_stack_size;
+  
+  // find the base pointer offset from the top of the stack from previous process
+  uint offset = (*(uint *)proc->tf->ebp) - proc->tf->ebp;
+
+  // set the new processes base pointer to be the top of the stack - the offset
+  np->tf->ebp = (uint)stack+size - offset;
+
+  cprintf("%x %x\n", (*(uint *)proc->tf->ebp), (*(uint *)np->tf->ebp));
+  cprintf("%x %x\n", proc->tf->ebp, np->tf->ebp);
+  cprintf("%x\n", (int)&proc->tf->ebp);
+
+  // copy the stack, not the offset though
+  memmove((void *) np->tf->esp, (void *) proc->tf->esp, current_stack_size);
 
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
   np->cwd = idup(proc->cwd);
 
-  pid = np->pid;
-  np->state = RUNNABLE;
   safestrcpy(np->name, proc->name, sizeof(proc->name));
+ 
+  pid = np->pid;
+
+  // lock to force the compiler to emit the np->state write last.
+  acquire(&ptable.lock);
+  np->state = RUNNABLE;
+  release(&ptable.lock);
+  
   return pid;
 }
 

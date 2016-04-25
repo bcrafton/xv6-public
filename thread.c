@@ -7,52 +7,48 @@
 #include "proc.h"
 #include "x86.h"
 
-// When called by parent, waits for the child threads to complete execution
-// by calling the wait() routine.
 int
 thread_join(void)
 {
   return join();
 }
 
-
-// Allocates a new stack for the child thread and calls clone with the newly 
-// allocated stack. The parent returns the pid of the child thread and the
-// child calls the routine pointed to by the start_routine argument and passes
-// it with the arg argument. Then the child frees the allocated stack and exits
-// If allocproc fails, returns -1
 int
-thread_create(void *(*start_routine)(void*),void *arg){
-  void *stack = malloc(4096);  
-  int rc = clone(stack, 4096);
-  if (rc == 0)
+thread_create(void * (*start_routine)(void *), void * arg){
+  void *user_stack = malloc(PGSIZE);  
+  int ret = clone(user_stack, PGSIZE);
+  if (ret == 0)
   {
     (*start_routine)(arg);
-    free(stack);
+    free(user_stack);
     exit();
   }
   else
-    return rc;
+  {
+    return ret;
+  }
 }
 
-// Initializes a spinlock
 void
-lock_init(lock_t * lock){
-  xchg(&lock->flag, 0);
-}
-
-// Acquires a spinlock which returns if no one already has the lock and spins
-// if the lock is already acquired.
-void
-lock_acquire(lock_t * lock)
+threadlock_init(struct threadlock *lk)
 {
-  while(xchg(&lock->flag, 1) == 1)
-    ;//spinny spin spins
+  lk->locked = 0;
 }
 
-// Releases a spinlock
+// Acquire the lock.
+// Loops (spins) until the lock is acquired.
+// Holding a lock for a long time may cause
+// other CPUs to waste time spinning to acquire it.
 void
-lock_release(lock_t * lock)
+threadlock_acquire(struct threadlock *lk)
 {
-  xchg(&lock->flag, 0);
+  while(xchg(&lk->locked, 1) != 0)
+    ;
+}
+
+// Release the lock.
+void
+threadlock_release(struct threadlock *lk)
+{
+  xchg(&lk->locked, 0);
 }
