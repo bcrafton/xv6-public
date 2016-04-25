@@ -6,13 +6,13 @@
 
 #define NUM_THREADS 5
 
-struct threadlock lock;
+struct pthread_mutex_t lock;
 
 // Increments a counter by one in a for-loop argument a number of times
 void *
 function(void* arg)
 {
-  threadlock_acquire((struct threadlock *)&lock);
+  pthread_mutex_lock((struct pthread_mutex_t *)&lock);
   int i;
   int* x = (int*)arg;
   for(i=0; i<100000000; i++)
@@ -20,20 +20,20 @@ function(void* arg)
     (*x)++;
   }
   printf(1, "%d\n", *x);
-  threadlock_release((struct threadlock *)&lock);
+  pthread_mutex_unlock((struct pthread_mutex_t *)&lock);
   return 0;
 }
 
 int
 main(int argc, char *argv[])
 {
-  threadlock_init((struct threadlock *)&lock);
+  pthread_mutex_init((struct pthread_mutex_t *)&lock);
   int x = 0;
   int i;
   int pid;
   for(i=0; i<NUM_THREADS; i++)
   {
-    pid = thread_create(function, (void *)&x);
+    pid = pthread_create(function, (void *)&x);
     if(pid == -1)
     {
       printf(2, "Error: thread_create failure");
@@ -48,7 +48,7 @@ main(int argc, char *argv[])
   
   for(i=0; i<NUM_THREADS; i++)
   {
-    thread_join();
+    pthread_join();
   }
   printf(1, "%d\n", x);
 

@@ -8,13 +8,7 @@
 #include "x86.h"
 
 int
-thread_join(void)
-{
-  return join();
-}
-
-int
-thread_create(void * (*start_routine)(void *), void * arg){
+pthread_create(void * (*start_routine)(void *), void * arg){
   void *user_stack = malloc(PGSIZE);  
   int ret = clone(user_stack, PGSIZE);
   if (ret == 0)
@@ -29,8 +23,14 @@ thread_create(void * (*start_routine)(void *), void * arg){
   }
 }
 
+int
+pthread_join(void)
+{
+  return join();
+}
+
 void
-threadlock_init(struct threadlock *lk)
+pthread_mutex_init(struct pthread_mutex_t *lk)
 {
   lk->locked = 0;
 }
@@ -40,7 +40,7 @@ threadlock_init(struct threadlock *lk)
 // Holding a lock for a long time may cause
 // other CPUs to waste time spinning to acquire it.
 void
-threadlock_acquire(struct threadlock *lk)
+pthread_mutex_lock(struct pthread_mutex_t *lk)
 {
   while(xchg(&lk->locked, 1) != 0)
     ;
@@ -48,7 +48,7 @@ threadlock_acquire(struct threadlock *lk)
 
 // Release the lock.
 void
-threadlock_release(struct threadlock *lk)
+pthread_mutex_unlock(struct pthread_mutex_t *lk)
 {
   xchg(&lk->locked, 0);
 }

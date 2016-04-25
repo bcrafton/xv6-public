@@ -2,7 +2,7 @@ struct stat;
 struct rtcdate;
 
 // Mutual exclusion lock.
-struct threadlock {
+struct pthread_mutex_t {
   uint locked;       // Is the lock held?
   
   // For debugging:
@@ -53,10 +53,10 @@ void free(void*);
 int atoi(const char*);
 
 //thread.c
-int thread_join(void);
-int thread_create(void *(*)(void*), void *); 
+int pthread_create(void *(*)(void*), void *); 
+int pthread_join(void);
 
 //threadlock.c
-void threadlock_init(struct threadlock*);
-void threadlock_acquire(struct threadlock*);
-void threadlock_release(struct threadlock*);
+void pthread_mutex_init(struct pthread_mutex_t*);
+void pthread_mutex_lock(struct pthread_mutex_t*);
+void pthread_mutex_unlock(struct pthread_mutex_t*);

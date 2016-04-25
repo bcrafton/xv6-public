@@ -166,9 +166,9 @@ fork(void)
   return pid;
 }
 
-// Creates a clone of the parent process by taking in a newly allocated stack
-// and copies the contents of the parents stack to the clone's new stack. The
-// new clone also uses the same pgdir as the parent. 
+// Create a new process copying p as the parent.
+// Sets up stack to return as if from system call.
+// Caller must set state of returned proc to RUNNABLE.
 int
 clone(void *stack, int size)
 {
@@ -197,6 +197,7 @@ clone(void *stack, int size)
   // dereferencing it gives where the actual base pointer 
   // is pointing too.
 
+  // get the current stack size, and set stack pointer to point to top of stack - size.
   uint current_stack_size = (*(uint *)proc->tf->ebp) - proc->tf->esp;
   np->tf->esp = (uint)stack+size - current_stack_size;
   
@@ -205,10 +206,6 @@ clone(void *stack, int size)
 
   // set the new processes base pointer to be the top of the stack - the offset
   np->tf->ebp = (uint)stack+size - offset;
-
-  cprintf("%x %x\n", (*(uint *)proc->tf->ebp), (*(uint *)np->tf->ebp));
-  cprintf("%x %x\n", proc->tf->ebp, np->tf->ebp);
-  cprintf("%x\n", (int)&proc->tf->ebp);
 
   // copy the stack, not the offset though
   memmove((void *) np->tf->esp, (void *) proc->tf->esp, current_stack_size);
