@@ -172,6 +172,8 @@ fork(void)
 int
 clone(void *stack, int size)
 {
+  cprintf("%d", proc->context->eip, proc->tf->eip);
+
   int i, pid;
   struct proc *np;
   // Allocate process.

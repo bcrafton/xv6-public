@@ -12,7 +12,6 @@ struct pthread_mutex_t {
                      // that locked the lock.
 };
 
-
 // system calls
 int fork(void);
 int exit(void) __attribute__((noreturn));
@@ -60,3 +59,4 @@ int pthread_join(void);
 void pthread_mutex_init(struct pthread_mutex_t*);
 void pthread_mutex_lock(struct pthread_mutex_t*);
 void pthread_mutex_unlock(struct pthread_mutex_t*);
+
