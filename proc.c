@@ -172,8 +172,6 @@ fork(void)
 int
 clone(void *stack, int size)
 {
-  cprintf("%d", proc->context->eip, proc->tf->eip);
-
   int i, pid;
   struct proc *np;
   // Allocate process.
@@ -190,27 +188,43 @@ clone(void *stack, int size)
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
   
-  // new process/thread needs to have the same stack
-  // this is because it will continue execution the
-  // same way a fork would.
+  /* new process/thread needs to have the same stack
+     this is because it will continue execution the
+     same way a fork would.
 
-  // note:
-  // ebp contains the location of the base pointer in the user stack
-  // dereferencing it gives where the actual base pointer 
-  // is pointing too.
+     however esp and ebp are relative pointers to the
+     stack which means they need to be set correctly
+     inside of the stack.
 
-  // get the current stack size, and set stack pointer to point to top of stack - size.
-  uint current_stack_size = (*(uint *)proc->tf->ebp) - proc->tf->esp;
-  np->tf->esp = (uint)stack+size - current_stack_size;
-  
-  // find the base pointer offset from the top of the stack from previous process
-  uint offset = (*(uint *)proc->tf->ebp) - proc->tf->ebp;
+     in order to set these correctly comparisons to
+     the parent processes stack need to be made
 
-  // set the new processes base pointer to be the top of the stack - the offset
-  np->tf->ebp = (uint)stack+size - offset;
+     reference example:
+     np stack = 0x9000
+     proc->tf->esp = 0x4203
+     proc->tf->ebp = 0x4212
 
-  // copy the stack, not the offset though
-  memmove((void *) np->tf->esp, (void *) proc->tf->esp, current_stack_size);
+     copy page 4 to 9
+     np->tf->esp = 0x9203
+     np->tf->esp = 0x9212
+
+     calculate offset.
+     copy pages.
+     set esp and ebp.
+  */
+
+  // get the size of the stack from function before clone
+  // (*(uint *)proc->tf->ebp) gives previous base pointer and esp is top of stack
+  uint sub_stack_size = (*(uint *)proc->tf->ebp) - proc->tf->esp;
+  // new esp points to just the part of stack 1 function before clone
+  np->tf->esp = (uint)stack+size - sub_stack_size;
+  // get the size of the stack in previous function
+  uint prev_function_stack_size = (*(uint *)proc->tf->ebp) - proc->tf->ebp;
+  // new base pointer should point to the only previous function
+  np->tf->ebp = (uint)stack+size - prev_function_stack_size;
+
+  // copy the sub stack
+  memmove((void *) np->tf->esp, (void *) proc->tf->esp, sub_stack_size);
 
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
