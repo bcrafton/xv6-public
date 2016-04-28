@@ -8,7 +8,6 @@
 
 struct pthread_mutex_t lock;
 
-// Increments a counter by one in a for-loop argument a number of times
 void *
 function(void* arg)
 {
