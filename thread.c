@@ -9,17 +9,25 @@
 
 int
 pthread_create(void * (*start_routine)(void *), void * arg){
-  void *user_stack = malloc(PGSIZE);  
-  int ret = clone(user_stack, PGSIZE);
-  if (ret == 0)
+	// a thread needs its own stack
+  void *user_stack = malloc(PGSIZE);
+	// call clone with the stack, and return the pid  
+  int pid = clone(user_stack, PGSIZE);
+  
+  // if this is the child, then do the function
+  if (pid == 0)
   {
+		// call the thread function with argument
     (*start_routine)(arg);
+		// free the stack after complete
     free(user_stack);
+		// exit so parent can take care of zombie.
     exit();
   }
+  // otherwise return the actual pid
   else
   {
-    return ret;
+    return pid;
   }
 }
 
